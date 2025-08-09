@@ -60,7 +60,6 @@ connect4-futuristic/
 
 git clone https://github.com/your-username/connect4-futuristic.git
 
-
 2. Open index.html in your browser.
 
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Connect4 - Futuristic</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Connect4 — Futuristic</h1>
+      <div class="controls">
+        <div class="mode">
+          <label><input type="radio" name="mode" value="pvp" checked /> PvP</label>
+          <label><input type="radio" name="mode" value="pve" /> PvAI</label>
+          <select id="aiDifficulty" title="AI difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="undoBtn" title="Undo last move">Undo</button>
+          <button id="resetBtn" title="Reset game">Reset</button>
+          <button id="muteBtn" title="Mute/unmute">🔊</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="info">
+        <p id="status">Player 1's Turn (🔴)</p>
+        <div id="scoreboard">
+          <span>🔴 <b id="p1score">0</b></span>
+          <span>—</span>
+          <span>🟡 <b id="p2score">0</b></span>
+        </div>
+      </div>
+
+      <div id="board" class="board" aria-label="Connect4 board"></div>
+
+      <footer>
+        <p class="hint">Click a column to drop a disc. First to connect 4 wins.</p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Optional: Replace sound file links or add assets/ folder in repo -->
+  <audio id="dropSound" src="assets/sounds/drop.mp3" preload="auto"></audio>
+  <audio id="winSound" src="assets/sounds/win.mp3" preload="auto"></audio>
+
+  <script src="script.js"></script>
+</body>
+</html>

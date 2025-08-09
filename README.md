@@ -58,8 +58,8 @@ connect4-futuristic/
 
 1. Clone the repository
 
-git clone https://github.com/your-username/connect4-futuristic.git
-
+git clone 
+https://github.com/krishn723/connect4-futuristic.git
 2. Open index.html in your browser.
 
 

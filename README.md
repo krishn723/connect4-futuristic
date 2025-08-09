@@ -1,17 +1,71 @@
-# 🔴 Connect4-Futuristic 🟡
+🎮 Connect4 Futuristic
 
-A modern, futuristic twist on the classic Connect 4 game — built with **HTML**, **CSS**, and **vanilla JavaScript**.  
-Playable in-browser with local multiplayer and a simple AI (Easy / Medium / Hard). Designed for portfolios and live demo via GitHub Pages.
+A modern, futuristic take on the classic Connect4 game with a sleek UI, smooth animations, and enhanced gameplay experience.
 
-## Features
-- PvP (local) and PvAI modes
-- AI difficulty: Easy (random), Medium (heuristic), Hard (minimax depth)
-- Undo last move, Reset game
-- Scoreboard to track wins
-- Futuristic neon visuals and responsive layout
-- Optional sound effects (add files to `assets/sounds/`)
+🚀 Features
 
-## How to use
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/your-username/connect4-futuristic.git
+Futuristic UI with neon-inspired design
+
+Two-player local mode
+
+Winning line highlight after each game
+
+Smooth animations for disc dropping
+
+Responsive design for all screen sizes
+
+Restart game button for quick replays
+
+
+🛠️ Technologies Used
+
+HTML5 – Structure
+
+CSS3 – Styling & animations
+
+JavaScript (ES6) – Game logic and interactions
+
+
+🎯 How to Play
+
+1. Player 1 uses Red discs, Player 2 uses Yellow discs.
+
+
+2. Players take turns dropping discs into columns.
+
+
+3. The first player to connect 4 in a row (vertically, horizontally, or diagonally) wins.
+
+
+4. Click Restart to play again.
+
+
+
+📂 Project Structure
+
+connect4-futuristic/
+│── index.html        # Main HTML file
+│── style.css         # Styles and animations
+│── script.js         # Game logic
+│── assets/           # Images, icons, sounds
+└── README.md         # Documentation
+
+📸 Preview
+
+(Add a screenshot here once the game is running)
+
+🔧 Installation & Usage
+
+1. Clone the repository
+
+git clone https://github.com/your-username/connect4-futuristic.git
+
+
+2. Open index.html in your browser.
+
+
+
+📜 License
+
+This project is licensed under the MIT License – feel free to modify and share.
+

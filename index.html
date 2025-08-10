@@ -1,54 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Connect4 - Futuristic</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Connect 4 — Futuristic (Krishan Saini)</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <header>
-      <h1>Connect4 — Futuristic</h1>
-      <div class="controls">
-        <div class="mode">
-          <label><input type="radio" name="mode" value="pvp" checked /> PvP</label>
-          <label><input type="radio" name="mode" value="pve" /> PvAI</label>
-          <select id="aiDifficulty" title="AI difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium" selected>Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div class="actions">
-          <button id="undoBtn" title="Undo last move">Undo</button>
-          <button id="resetBtn" title="Reset game">Reset</button>
-          <button id="muteBtn" title="Mute/unmute">🔊</button>
-        </div>
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="header-left">
+        <h1>🎮 Connect 4 <span>Futuristic</span></h1>
+        <p class="byline">by <a href="https://github.com/krishn723" target="_blank">Krishan Saini</a></p>
       </div>
+      <nav class="header-links">
+        <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a>
+        <a href="https://github.com/krishn723" target="_blank">GitHub</a>
+        <a href="https://www.instagram.com/krish_saini5152?igsh=MXF3ZmYyc2Y4OHdndg==" target="_blank">Instagram</a>
+        <a href="https://youtube.com/@krishsaini01?si=QV0ft3Eh_dLcASMp" target="_blank">YouTube</a>
+      </nav>
     </header>
 
-    <main>
-      <div class="info">
-        <p id="status">Player 1's Turn (🔴)</p>
-        <div id="scoreboard">
-          <span>🔴 <b id="p1score">0</b></span>
-          <span>—</span>
-          <span>🟡 <b id="p2score">0</b></span>
-        </div>
+    <!-- SETUP / CONTROLS -->
+    <section class="controls" id="setup">
+      <div class="control-row">
+        <label for="mode">Mode</label>
+        <select id="mode">
+          <option value="pvp">Player vs Player</option>
+          <option value="ai">Player vs AI</option>
+        </select>
       </div>
 
-      <div id="board" class="board" aria-label="Connect4 board"></div>
+      <div class="control-row" id="difficulty-row" style="display:none;">
+        <label for="difficulty">AI Difficulty</label>
+        <select id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
 
-      <footer>
-        <p class="hint">Click a column to drop a disc. First to connect 4 wins.</p>
-      </footer>
+      <div class="control-row actions">
+        <button id="start-btn">Start Game</button>
+        <button id="restart-btn" disabled>Restart</button>
+        <button id="undo-btn" title="Undo last move (works for PvP & PvAI)">Undo</button>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section class="status">
+      <div id="turn-indicator">Start a game to play</div>
+    </section>
+
+    <!-- BOARD -->
+    <main class="game-wrap">
+      <div id="board" class="board" aria-label="Connect 4 board"></div>
     </main>
-  </div>
 
-  <!-- Optional: Replace sound file links or add assets/ folder in repo -->
-  <audio id="dropSound" src="assets/sounds/drop.mp3" preload="auto"></audio>
-  <audio id="winSound" src="assets/sounds/win.mp3" preload="auto"></audio>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <p>© 2025 Krishan Saini</p>
+      <p class="social-footer">
+        <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a> •
+        <a href="https://github.com/krishn723" target="_blank">GitHub</a> •
+        <a href="https://www.instagram.com/krish_saini5152?igsh=MXF3ZmYyc2Y4OHdndg==" target="_blank">Instagram</a> •
+        <a href="https://youtube.com/@krishsaini01?si=QV0ft3Eh_dLcASMp" target="_blank">YouTube</a>
+      </p>
+    </footer>
+  </div>
 
   <script src="script.js"></script>
 </body>

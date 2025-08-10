@@ -1,3 +1,7 @@
+## 🎮 Play the Game  
+[Click here to play Connect 4 Futuristic!](https://krishn723.github.io/connect4-futuristic/)
+
+
 🎮 Connect4 Futuristic
 
 A modern, futuristic take on the classic Connect4 game with a sleek UI, smooth animations, and enhanced gameplay experience.

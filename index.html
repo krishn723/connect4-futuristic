@@ -1,75 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Connect 4 — Futuristic (Krishan Saini)</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4 – Futuristic Edition</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
     <!-- HEADER -->
     <header class="site-header">
-      <div class="header-left">
-        <h1>🎮 Connect 4 <span>Futuristic</span></h1>
-        <p class="byline">by <a href="https://github.com/krishn723" target="_blank">Krishan Saini</a></p>
-      </div>
-      <nav class="header-links">
-        <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a>
-        <a href="https://github.com/krishn723" target="_blank">GitHub</a>
-        <a href="https://www.instagram.com/krish_saini5152?igsh=MXF3ZmYyc2Y4OHdndg==" target="_blank">Instagram</a>
-        <a href="https://youtube.com/@krishsaini01?si=QV0ft3Eh_dLcASMp" target="_blank">YouTube</a>
-      </nav>
+        <h1>🎮 Connect 4 – Futuristic Edition</h1>
+        <p>🚀 Crafted with ❤️ by <strong>Krishan Saini</strong></p>
+        <nav>
+            <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a>
+            <a href="https://github.com/krishn723" target="_blank">GitHub</a>
+            <a href="https://www.instagram.com/krish_saini5152" target="_blank">Instagram</a>
+            <a href="https://youtube.com/@krishsaini01" target="_blank">YouTube</a>
+        </nav>
     </header>
 
-    <!-- SETUP / CONTROLS -->
-    <section class="controls" id="setup">
-      <div class="control-row">
-        <label for="mode">Mode</label>
-        <select id="mode">
-          <option value="pvp">Player vs Player</option>
-          <option value="ai">Player vs AI</option>
-        </select>
-      </div>
+    <!-- LOBBY SCREEN -->
+    <section id="lobby">
+        <h2>Select Game Mode</h2>
+        <div class="mode-selection">
+            <div class="mode-card" onclick="setMode('pvp')">
+                🎮 Player vs Player
+            </div>
+            <div class="mode-card" onclick="setMode('ai')">
+                🤖 Player vs AI
+            </div>
+        </div>
 
-      <div class="control-row" id="difficulty-row" style="display:none;">
-        <label for="difficulty">AI Difficulty</label>
-        <select id="difficulty">
-          <option value="easy">Easy</option>
-          <option value="medium" selected>Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </div>
+        <div id="difficulty-container" class="hidden">
+            <h3>Select AI Difficulty</h3>
+            <div class="difficulty-buttons">
+                <button onclick="setDifficulty('easy')">Easy</button>
+                <button onclick="setDifficulty('medium')">Medium</button>
+                <button onclick="setDifficulty('hard')">Hard</button>
+            </div>
+        </div>
 
-      <div class="control-row actions">
-        <button id="start-btn">Start Game</button>
-        <button id="restart-btn" disabled>Restart</button>
-        <button id="undo-btn" title="Undo last move (works for PvP & PvAI)">Undo</button>
-      </div>
+        <div class="instructions">
+            <h3>📜 How to Play</h3>
+            <ul>
+                <li>Select a game mode above.</li>
+                <li>If playing vs AI, choose difficulty.</li>
+                <li>Click "Start Game" and drop your pieces.</li>
+                <li>Connect 4 pieces in a row to win!</li>
+            </ul>
+        </div>
+
+        <button id="start-btn" onclick="startGame()">🚀 Start Game</button>
     </section>
 
-    <!-- STATUS -->
-    <section class="status">
-      <div id="turn-indicator">Start a game to play</div>
-    </section>
-
-    <!-- BOARD -->
-    <main class="game-wrap">
-      <div id="board" class="board" aria-label="Connect 4 board"></div>
+    <!-- GAME AREA -->
+    <main id="game-section" class="hidden">
+        <div id="turn-indicator">Player 1's Turn (Red)</div>
+        <div class="board" id="board"></div>
+        <button id="restart" onclick="restartGame()">Restart Game</button>
     </main>
 
     <!-- FOOTER -->
     <footer class="site-footer">
-      <p>© 2025 Krishan Saini</p>
-      <p class="social-footer">
-        <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a> •
-        <a href="https://github.com/krishn723" target="_blank">GitHub</a> •
-        <a href="https://www.instagram.com/krish_saini5152?igsh=MXF3ZmYyc2Y4OHdndg==" target="_blank">Instagram</a> •
-        <a href="https://youtube.com/@krishsaini01?si=QV0ft3Eh_dLcASMp" target="_blank">YouTube</a>
-      </p>
+        <p>🚀 Crafted with ❤️ by Krishan Saini</p>
+        <p>
+            <a href="https://linkedin.com/in/krishan-saini-b33b26300" target="_blank">LinkedIn</a> • 
+            <a href="https://github.com/krishn723" target="_blank">GitHub</a> • 
+            <a href="https://www.instagram.com/krish_saini5152" target="_blank">Instagram</a> • 
+            <a href="https://youtube.com/@krishsaini01" target="_blank">YouTube</a>
+        </p>
     </footer>
-  </div>
 
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -1,362 +1,418 @@
-/* Connect4-Futuristic
-   PvP + simple AI (Easy/Medium/Hard)
-   Features: undo, reset, scoreboard, win highlight, sounds (optional)
+/* Script.js
+   Fully self-contained client-side Connect 4 with:
+   - PvP and PvAI modes
+   - AI difficulties: easy (random), medium (lookahead 3), hard (minimax depth 5)
+   - Fix: board re-renders right after placing piece so last move shows
+   - Win detection and highlight
 */
 
 const ROWS = 6, COLS = 7;
-let board = [];               // 2D array [row][col]
-let current = 1;              // 1 => red (player1), -1 => yellow (player2 or AI)
-let history = [];             // stack of moves {r,c,player}
-let gameOver = false;
-let p1Score = 0, p2Score = 0;
-let mute = false;
 
+// UI elements
 const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
-const undoBtn = document.getElementById('undoBtn');
-const resetBtn = document.getElementById('resetBtn');
-const muteBtn = document.getElementById('muteBtn');
-const aiDifficulty = document.getElementById('aiDifficulty');
-const p1scoreEl = document.getElementById('p1score');
-const p2scoreEl = document.getElementById('p2score');
+const turnIndicator = document.getElementById('turn-indicator');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const undoBtn = document.getElementById('undo-btn');
+const modeSelect = document.getElementById('mode');
+const difficultyRow = document.getElementById('difficulty-row');
+const difficultySelect = document.getElementById('difficulty');
 
-const dropSound = document.getElementById('dropSound');
-const winSound = document.getElementById('winSound');
+let board = [];
+let currentPlayer = 'red'; // 'red' (human) or 'yellow' (2nd human or AI)
+let mode = 'pvp'; // 'pvp' | 'ai'
+let difficulty = 'medium'; // easy | medium | hard
+let gameOver = false;
+let history = []; // store moves {r,c,player}
 
-function playSound(el){
-  if(mute) return;
-  if(!el) return;
-  try { el.currentTime = 0; el.play(); } catch(e){}
+// init UI events
+modeSelect.addEventListener('change', () => {
+  if (modeSelect.value === 'ai') difficultyRow.style.display = 'flex';
+  else difficultyRow.style.display = 'none';
+});
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', resetGame);
+undoBtn.addEventListener('click', undoMove);
+
+// start on load as well? We'll wait for user to click start
+function startGame(){
+  mode = modeSelect.value;
+  difficulty = difficultySelect.value;
+  resetGame();
+  document.getElementById('setup').querySelectorAll('select,button').forEach(el => {
+    if (el.id !== 'start-btn') el.disabled = false;
+  });
+  startBtn.disabled = true;
+  restartBtn.disabled = false;
+  updateTurnIndicator();
 }
 
-function resetBoard(){
-  board = Array.from({length:ROWS}, ()=> Array(COLS).fill(0));
-  history = [];
-  current = 1;
+// create empty board and render
+function resetGame(){
+  board = Array.from({length: ROWS}, ()=> Array(COLS).fill(null));
+  currentPlayer = 'red';
   gameOver = false;
+  history = [];
   renderBoard();
-  updateStatus();
-  boardEl.style.pointerEvents = 'auto';
+  updateTurnIndicator();
+  startBtn.disabled = false;
+  restartBtn.disabled = true;
 }
 
+// render the board DOM from board[][]
 function renderBoard(){
   boardEl.innerHTML = '';
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
+  for (let r = 0; r < ROWS; r++){
+    for (let c = 0; c < COLS; c++){
       const cell = document.createElement('div');
       cell.className = 'cell';
-      cell.dataset.row = r; cell.dataset.col = c;
-      if(board[r][c] === 1) cell.classList.add('red');
-      if(board[r][c] === -1) cell.classList.add('yellow');
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      // attach click to drop in that column
+      cell.addEventListener('click', () => {
+        if (gameOver) return;
+        // Only allow moves after Start clicked
+        if (startBtn.disabled === false) return;
+        // If PvAI and it's AI's turn, ignore clicks
+        if (mode === 'ai' && currentPlayer === 'yellow') return;
+        playerMove(c);
+      });
+
+      // add disc element if present
+      const token = board[r][c];
+      if (token){
+        const disc = document.createElement('div');
+        disc.className = `disc ${token} land`;
+        cell.appendChild(disc);
+      }
       boardEl.appendChild(cell);
     }
   }
 }
 
-function updateStatus(msg){
-  if(msg){ statusEl.textContent = msg; return; }
-  if(gameOver) return;
-  statusEl.textContent = current === 1 ? "Player 1's Turn (🔴)" : (isPvP()? "Player 2's Turn (🟡)" : "AI's Turn (🟡)");
-}
+// perform a player's move in column col
+function playerMove(col){
+  if (gameOver) return;
+  const row = getAvailableRow(col);
+  if (row === -1) return;
+  placeDisc(row,col,currentPlayer);
+  history.push({r:row,c:col,player:currentPlayer});
+  renderBoard(); // show last move immediately
 
-function isPvP(){
-  return document.querySelector('input[name="mode"]:checked').value === 'pvp';
-}
-
-function columnDrop(col){
-  if(gameOver) return false;
-  for(let r=ROWS-1;r>=0;r--){
-    if(board[r][col] === 0){
-      board[r][col] = current;
-      history.push({r,c:col,player:current});
-      animateDrop(r,col,current);
-      playSound(dropSound);
-      const win = checkWin(r,col,current);
-      if(win){
-        gameOver = true;
-        highlightWin(win);
-        updateScores(current);
-        updateStatus((current===1? "Player 1 (🔴) Wins!" : (isPvP()? "Player 2 (🟡) Wins!" : "AI (🟡) Wins!")));
-        playSound(winSound);
-        boardEl.style.pointerEvents = 'none';
-      } else {
-        if(isBoardFull()){
-          gameOver = true;
-          updateStatus("It's a Draw!");
-        } else {
-          current *= -1;
-          updateStatus();
-          if(!isPvP() && current === -1 && !gameOver){
-            // AI move after short delay
-            setTimeout(()=> aiMove(), 300);
-          }
-        }
-      }
-      return true;
-    }
+  const winCoords = checkWinCoords(row,col,currentPlayer);
+  if (winCoords.length){
+    gameOver = true;
+    highlightWin(winCoords);
+    turnIndicator.textContent = `🏆 ${capitalize(currentPlayer)} Wins!`;
+    return;
   }
-  return false;
+
+  if (isBoardFull()){
+    gameOver = true;
+    turnIndicator.textContent = `Draw!`;
+    return;
+  }
+
+  // switch turn
+  currentPlayer = (currentPlayer === 'red') ? 'yellow' : 'red';
+  updateTurnIndicator();
+
+  // if AI mode and now AI's turn, compute AI move
+  if (mode === 'ai' && currentPlayer === 'yellow' && !gameOver){
+    setTimeout(() => aiTurn(), 350); // short delay for UX
+  }
+}
+
+function placeDisc(r,c,player){
+  board[r][c] = player;
+}
+
+// get lowest available row in column
+function getAvailableRow(col){
+  for (let r = ROWS-1; r >= 0; r--){
+    if (!board[r][col]) return r;
+  }
+  return -1;
 }
 
 function isBoardFull(){
-  return board[0].every(cell => cell!==0);
+  return board.every(row => row.every(cell => cell !== null));
 }
 
-function animateDrop(r,c,player){
-  // just re-render; visuals are CSS-based
-  renderBoard();
+function updateTurnIndicator(){
+  if (gameOver) return;
+  turnIndicator.textContent = `${capitalize(currentPlayer)}'s Turn (${currentPlayer === 'red' ? 'Red' : 'Yellow'})`;
 }
 
-/* win detection: returns array of winning positions if win else null */
-function checkWin(r,c,player){
-  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-  for(const [dr,dc] of dirs){
-    const line = [{r,c}];
+/* ---------- WIN DETECTION (returns coords of winning discs) ---------- */
+function checkWinCoords(row,col,player){
+  const dirs = [
+    {dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}, {dr:1,dc:-1}
+  ];
+  for (const {dr,dc} of dirs){
+    const coords = [[row,col]];
     // forward
-    let rr=r+dr, cc=c+dc;
-    while(inBounds(rr,cc) && board[rr][cc]===player){ line.push({r:rr,c:cc}); rr+=dr; cc+=dc; }
+    let r = row + dr, c = col + dc;
+    while (inBounds(r,c) && board[r][c] === player){
+      coords.push([r,c]); r+=dr; c+=dc;
+    }
     // backward
-    rr=r-dr; cc=c-dc;
-    while(inBounds(rr,cc) && board[rr][cc]===player){ line.push({r:rr,c:cc}); rr-=dr; cc-=dc; }
-    if(line.length>=4) return line;
+    r = row - dr; c = col - dc;
+    while (inBounds(r,c) && board[r][c] === player){
+      coords.push([r,c]); r-=dr; c-=dc;
+    }
+    if (coords.length >= 4) return coords;
   }
-  return null;
+  return [];
 }
 
 function inBounds(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
 
-function highlightWin(cells){
-  // add .win to cells
-  const all = document.querySelectorAll('.cell');
-  cells.forEach(pos=>{
-    // find element with data-row/col
-    for(const el of all){
-      if(+el.dataset.row===pos.r && +el.dataset.col===pos.c){
-        el.classList.add('win');
-      }
+function highlightWin(coords){
+  coords.forEach(([r,c]) => {
+    const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+    if (cell){
+      const disc = cell.querySelector('.disc');
+      if (disc) disc.classList.add('win');
+      cell.classList.add('win');
     }
   });
 }
 
-/* Undo */
-undoBtn.addEventListener('click', ()=>{
-  if(history.length===0 || gameOver) return;
+/* ---------- UNDO ---------- */
+function undoMove(){
+  if (!history.length || gameOver) return;
+  // pop last move
   const last = history.pop();
-  board[last.r][last.c] = 0;
-  current = last.player;
-  renderBoard();
-  gameOver = false;
-  boardEl.style.pointerEvents = 'auto';
-  updateStatus();
-});
-
-/* Reset */
-resetBtn.addEventListener('click', ()=> {
-  resetBoard();
-});
-
-/* Mute */
-muteBtn.addEventListener('click', ()=>{
-  mute = !mute;
-  muteBtn.textContent = mute ? '🔇' : '🔊';
-});
-
-/* Click handling: drop into column clicked */
-boardEl.addEventListener('click', (e)=>{
-  const cell = e.target.closest('.cell');
-  if(!cell || gameOver) return;
-  const col = +cell.dataset.col;
-  // find top-most row that is empty is handled in columnDrop
-  if(columnDrop(col)){
-    // success
-  }
-});
-
-/* Score update */
-function updateScores(player){
-  if(player===1) p1Score++;
-  else p2Score++;
-  p1scoreEl.textContent = p1Score;
-  p2scoreEl.textContent = p2Score;
-}
-
-/* --- AI logic --- 
-   We'll implement a lightweight AI:
-   - easy: random valid column
-   - medium: heuristic scoring of columns (lookahead 2)
-   - hard: minimax with depth 4 and simple heuristic
-*/
-function aiMove(){
-  if(gameOver) return;
-  const diff = aiDifficulty.value;
-  let col;
-  if(diff==='easy') col = getRandomMove();
-  else if(diff==='medium') col = getBestMove(2); // small depth
-  else col = getBestMove(4); // harder
-  if(col===null || col===undefined) col = getRandomMove();
-  columnDrop(col);
-}
-
-/* Random valid move */
-function getRandomMove(){
-  const moves = [];
-  for(let c=0;c<COLS;c++) if(board[0][c]===0) moves.push(c);
-  if(moves.length===0) return null;
-  return moves[Math.floor(Math.random()*moves.length)];
-}
-
-/* Simple heuristic evaluation for board for player (1 or -1) */
-function evaluateBoard(tempBoard){
-  // scoring patterns: center control, 2/3 in a row, block opponent
-  let score = 0;
-  const centerCol = Math.floor(COLS/2);
-  // center column preference
-  for(let r=0;r<ROWS;r++){
-    if(tempBoard[r][centerCol] === -1) score += 3; // AI is -1
-    else if(tempBoard[r][centerCol] === 1) score -= 3;
-  }
-  // check all windows of 4
-  const windowScore = (windowArr)=>{
-    let s=0, aiCount=0, plCount=0, empty=0;
-    for(const v of windowArr){
-      if(v===-1) aiCount++;
-      else if(v===1) plCount++;
-      else empty++;
+  board[last.r][last.c] = null;
+  // if ai mode and last was human, also pop AI move if present
+  if (mode === 'ai'){
+    // if last move was by human and there is another last move by AI, remove it too
+    if (last.player === 'red' && history.length){
+      const prev = history[history.length - 1];
+      if (prev.player === 'yellow'){
+        history.pop();
+        board[prev.r][prev.c] = null;
+      }
     }
-    if(aiCount===4) s += 1000;
-    else if(aiCount===3 && empty===1) s += 50;
-    else if(aiCount===2 && empty===2) s += 10;
+  }
+  currentPlayer = 'red';
+  gameOver = false;
+  renderBoard();
+  updateTurnIndicator();
+}
 
-    if(plCount===3 && empty===1) s -= 80; // block
-    if(plCount===2 && empty===2) s -= 5;
-    return s;
-  };
+/* ---------- AI ---------- */
+function aiTurn(){
+  // decide move based on difficulty
+  if (difficulty === 'easy'){
+    const c = aiRandom();
+    playerMove(c);
+    return;
+  }
+  if (difficulty === 'medium'){
+    const c = aiMedium();
+    playerMove(c);
+    return;
+  }
+  // hard
+  const c = aiHard(); // minimax depth 5
+  playerMove(c);
+}
+
+function aiRandom(){
+  const valid = getValidColumns();
+  return valid[Math.floor(Math.random()*valid.length)];
+}
+
+function aiMedium(){
+  // Try win
+  const win = findWinningColumn('yellow');
+  if (win !== null) return win;
+  // block human win
+  const block = findWinningColumn('red');
+  if (block !== null) return block;
+  // prefer center
+  const pref = [3,2,4,1,5,0,6];
+  for (const c of pref) if (getAvailableRow(c)!==-1) return c;
+  return aiRandom();
+}
+
+function findWinningColumn(player){
+  for (let c=0;c<COLS;c++){
+    const r = getAvailableRow(c);
+    if (r===-1) continue;
+    board[r][c] = player;
+    const coords = checkWinCoords(r,c,player);
+    board[r][c] = null;
+    if (coords.length) return c;
+  }
+  return null;
+}
+
+/* Hard: minimax with alpha-beta
+   - depth: 5 (strong)
+   - we return best column
+*/
+function aiHard(){
+  const depth = 5; // strong; increase for stronger but slower
+  const [score, col] = minimax(board, depth, -Infinity, Infinity, true);
+  if (col === null || col === undefined) return aiRandom();
+  return col;
+}
+
+/* Minimax helpers */
+function minimax(nodeBoard, depth, alpha, beta, maximizingPlayer){
+  // terminal check
+  const term = evaluateTerminal(nodeBoard);
+  if (depth === 0 || term.terminal){
+    return [evaluateBoard(nodeBoard), null];
+  }
+
+  const validCols = getValidColumnsForBoard(nodeBoard);
+  if (maximizingPlayer){
+    let maxEval = -Infinity;
+    let bestCol = validCols[0] ?? null;
+    for (const col of validCols){
+      const row = getAvailableRowForBoard(nodeBoard,col);
+      if (row === -1) continue;
+      nodeBoard[row][col] = 'yellow';
+      const [evalScore] = minimax(nodeBoard, depth-1, alpha, beta, false);
+      nodeBoard[row][col] = null;
+      if (evalScore > maxEval){
+        maxEval = evalScore; bestCol = col;
+      }
+      alpha = Math.max(alpha, evalScore);
+      if (beta <= alpha) break;
+    }
+    return [maxEval, bestCol];
+  } else {
+    let minEval = Infinity;
+    let bestCol = validCols[0] ?? null;
+    for (const col of validCols){
+      const row = getAvailableRowForBoard(nodeBoard,col);
+      if (row === -1) continue;
+      nodeBoard[row][col] = 'red';
+      const [evalScore] = minimax(nodeBoard, depth-1, alpha, beta, true);
+      nodeBoard[row][col] = null;
+      if (evalScore < minEval){
+        minEval = evalScore; bestCol = col;
+      }
+      beta = Math.min(beta, evalScore);
+      if (beta <= alpha) break;
+    }
+    return [minEval, bestCol];
+  }
+}
+
+function evaluateTerminal(b){
+  // check for winner quickly
+  for (let r=0;r<ROWS;r++){
+    for (let c=0;c<COLS;c++){
+      const p = b[r][c];
+      if (!p) continue;
+      if (checkWinCoordsForBoard(b,r,c,p).length) return {terminal:true, winner:p};
+    }
+  }
+  // full board
+  const full = b.every(row => row.every(cell => cell!==null));
+  if (full) return {terminal:true, winner:null};
+  return {terminal:false, winner:null};
+}
+
+/* Evaluate board heuristically:
+   positive -> good for AI (yellow)
+*/
+function evaluateBoard(b){
+  let score = 0;
+
+  // center control
+  let centerCount = 0;
+  for (let r=0;r<ROWS;r++) if (b[r][Math.floor(COLS/2)] === 'yellow') centerCount++;
+  score += centerCount * 6;
+
+  const SCORE = {4: 100000, 3: 150, 2: 8};
 
   // horizontal windows
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS-3;c++){
-      const win = [tempBoard[r][c], tempBoard[r][c+1], tempBoard[r][c+2], tempBoard[r][c+3]];
-      score += windowScore(win);
+  for (let r=0;r<ROWS;r++){
+    for (let c=0;c<COLS-3;c++){
+      const window = [b[r][c], b[r][c+1], b[r][c+2], b[r][c+3]];
+      score += evaluateWindow(window, SCORE);
     }
   }
   // vertical
-  for(let c=0;c<COLS;c++){
-    for(let r=0;r<ROWS-3;r++){
-      const win = [tempBoard[r][c], tempBoard[r+1][c], tempBoard[r+2][c], tempBoard[r+3][c]];
-      score += windowScore(win);
+  for (let c=0;c<COLS;c++){
+    for (let r=0;r<ROWS-3;r++){
+      const window = [b[r][c], b[r+1][c], b[r+2][c], b[r+3][c]];
+      score += evaluateWindow(window, SCORE);
     }
   }
   // diag down-right
-  for(let r=0;r<ROWS-3;r++){
-    for(let c=0;c<COLS-3;c++){
-      const win = [tempBoard[r][c], tempBoard[r+1][c+1], tempBoard[r+2][c+2], tempBoard[r+3][c+3]];
-      score += windowScore(win);
+  for (let r=0;r<ROWS-3;r++){
+    for (let c=0;c<COLS-3;c++){
+      const window = [b[r][c], b[r+1][c+1], b[r+2][c+2], b[r+3][c+3]];
+      score += evaluateWindow(window, SCORE);
     }
   }
   // diag down-left
-  for(let r=0;r<ROWS-3;r++){
-    for(let c=3;c<COLS;c++){
-      const win = [tempBoard[r][c], tempBoard[r+1][c-1], tempBoard[r+2][c-2], tempBoard[r+3][c-3]];
-      score += windowScore(win);
+  for (let r=0;r<ROWS-3;r++){
+    for (let c=3;c<COLS;c++){
+      const window = [b[r][c], b[r+1][c-1], b[r+2][c-2], b[r+3][c-3]];
+      score += evaluateWindow(window, SCORE);
     }
   }
   return score;
 }
 
-/* Simulate dropping on temp board */
-function simulateDrop(tempBoard, col, player){
-  for(let r=ROWS-1;r>=0;r--){
-    if(tempBoard[r][col]===0){ tempBoard[r][col]=player; return true; }
-  }
-  return false;
+function evaluateWindow(window, SCORE){
+  const aiCount = window.filter(x => x === 'yellow').length;
+  const huCount = window.filter(x => x === 'red').length;
+  const empty = window.filter(x => x === null).length;
+  let val = 0;
+  if (aiCount === 4) val += SCORE[4];
+  else if (aiCount === 3 && empty === 1) val += SCORE[3];
+  else if (aiCount === 2 && empty === 2) val += SCORE[2];
+
+  if (huCount === 3 && empty === 1) val -= 200; // big penalty to block
+  if (huCount === 4) val -= SCORE[4]*1.2;
+  return val;
 }
 
-/* Return best column using minimax-like search with alpha-beta (depth small) */
-function getBestMove(depth){
-  const validCols = [];
-  for(let c=0;c<COLS;c++) if(board[0][c]===0) validCols.push(c);
-  if(validCols.length===0) return null;
-
-  let bestScore = -Infinity, bestCol = validCols[0];
-  for(const col of validCols){
-    const temp = board.map(r=>r.slice());
-    simulateDrop(temp,col,-1); // AI plays as -1
-    const score = minimax(temp, depth-1, false, -Infinity, Infinity);
-    if(score > bestScore){
-      bestScore = score; bestCol = col;
-    }
-  }
-  return bestCol;
+function getValidColumnsForBoard(b){
+  const cols = [];
+  for (let c=0;c<COLS;c++) if (b[0][c] === null) cols.push(c);
+  // order prefer center
+  return cols.sort((a,b)=> Math.abs(3-a) - Math.abs(3-b));
 }
 
-/* minimax with alpha-beta */
-function minimax(tempBoard, depth, maximizing, alpha, beta){
-  // check terminal
-  if(depth===0) return evaluateBoard(tempBoard);
-
-  // check immediate win / loss
-  if(checkImmediateWin(tempBoard, -1)) return 1000000;
-  if(checkImmediateWin(tempBoard, 1)) return -1000000;
-
-  const validCols = [];
-  for(let c=0;c<COLS;c++) if(tempBoard[0][c]===0) validCols.push(c);
-  if(validCols.length===0) return 0;
-
-  if(maximizing){
-    let value = -Infinity;
-    for(const col of validCols){
-      const tb = tempBoard.map(r=>r.slice());
-      simulateDrop(tb,col,-1);
-      value = Math.max(value, minimax(tb, depth-1, false, alpha, beta));
-      alpha = Math.max(alpha, value);
-      if(alpha >= beta) break;
-    }
-    return value;
-  } else {
-    let value = Infinity;
-    for(const col of validCols){
-      const tb = tempBoard.map(r=>r.slice());
-      simulateDrop(tb,col,1);
-      value = Math.min(value, minimax(tb, depth-1, true, alpha, beta));
-      beta = Math.min(beta, value);
-      if(alpha >= beta) break;
-    }
-    return value;
-  }
+function getAvailableRowForBoard(b,col){
+  for (let r = ROWS-1; r>=0; r--) if (b[r][col]===null) return r;
+  return -1;
 }
 
-/* check immediate win for player on temp board */
-function checkImmediateWin(tempBoard, player){
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      if(tempBoard[r][c]!==player) continue;
-      if(checkWinTemp(tempBoard,r,c,player)) return true;
-    }
+function checkWinCoordsForBoard(b,row,col,player){
+  const dirs = [{dr:0,dc:1},{dr:1,dc:0},{dr:1,dc:1},{dr:1,dc:-1}];
+  for (const {dr,dc} of dirs){
+    const coords = [[row,col]];
+    let r=row+dr, c=col+dc;
+    while (inBounds(r,c) && b[r][c]===player){ coords.push([r,c]); r+=dr; c+=dc; }
+    r=row-dr; c=col-dc;
+    while (inBounds(r,c) && b[r][c]===player){ coords.push([r,c]); r-=dr; c-=dc; }
+    if (coords.length >=4) return coords;
   }
-  return false;
-}
-function checkWinTemp(tb,r,c,player){
-  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-  for(const [dr,dc] of dirs){
-    let cnt = 1;
-    let rr=r+dr, cc=c+dc;
-    while(inBounds(rr,cc) && tb[rr][cc]===player){ cnt++; rr+=dr; cc+=dc; }
-    rr=r-dr; cc=c-dc;
-    while(inBounds(rr,cc) && tb[rr][cc]===player){ cnt++; rr-=dr; cc-=dc; }
-    if(cnt>=4) return true;
-  }
-  return false;
+  return [];
 }
 
-/* Utils */
-function inBounds(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
+/* ---------- UTIL ---------- */
+function getValidColumns(){
+  const cols=[];
+  for (let c=0;c<COLS;c++) if (board[0][c] === null) cols.push(c);
+  return cols.sort((a,b)=> Math.abs(3-a)-Math.abs(3-b));
+}
 
-/* Initialize and set up */
-resetBoard(); // create empty board
+function checkWinCoords(row,col,player){
+  return checkWinCoordsForBoard(board,row,col,player);
+}
 
-// update when mode selection changes (if PvP and it was AI's turn, nothing)
-document.querySelectorAll('input[name="mode"]').forEach(el=>{
-  el.addEventListener('change', ()=>{
-    resetBoard();
-  });
-});
+function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
